@@ -1,0 +1,53 @@
+(function executeRule(current, previous) {
+
+    // Only when moving to Closed & not already awarded
+    if (!(current.state.changesTo('7') && !current.u_points_awarded)) 
+        return;
+    if (!current.assigned_to) 
+        return;
+
+    // Priority-based points
+    var pointsMap = { '1': 50, '2': 35, '3': 20, '4': 10, '5': 5 };
+    var points = pointsMap[String(current.priority)] || 0;
+
+    // SLA bonus check
+    var slaBonus = 0;
+    var ts = new GlideRecord('task_sla');
+    ts.addQuery('task', current.sys_id);
+    ts.addQuery('stage', 'completed');
+    ts.addQuery('has_breached', false);
+    ts.query();
+    if (ts.next()) 
+        slaBonus = 10;
+
+    var total = points + slaBonus;
+
+    // Update or insert into Rewards table
+    var gr = new GlideRecord('u_agent_rewards');
+    gr.addQuery('u_agent', current.assigned_to);
+    gr.query();
+    if (gr.next()) {
+        var newTotal = (parseInt(gr.u_points, 10) || 0) + total;
+        gr.u_points = newTotal;
+        gr.u_badge = getBadge(newTotal);
+        gr.update();
+    } else {
+        gr.initialize();
+        gr.u_agent = current.assigned_to;
+        gr.u_points = total;
+        gr.u_badge = getBadge(total);
+        gr.insert();
+    }
+
+    // Prevent duplicates
+    current.u_points_awarded = true;
+    current.update();
+
+    function getBadge(score) {
+        if (score >= 300) return 'Platinum';
+        if (score >= 200) return 'Gold';
+        if (score >= 100) return 'Silver';
+        return 'Bronze';
+    }
+
+})(current, previous);

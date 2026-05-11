@@ -1,0 +1,7 @@
+function onLoad() {
+    if (g_scratchpad.badge) {
+        g_form.addInfoMessage(
+            'Agent Badge: ' + g_scratchpad.badge + ' | Points: ' + g_scratchpad.points
+        );
+    }
+}

@@ -1,0 +1,15 @@
+(function executeRule(current, g_scratchpad) {
+    g_scratchpad.badge = '';
+    g_scratchpad.points = 0;
+
+    if (!current.assigned_to) return;
+
+    var r = new GlideRecord('u_agent_rewards');
+    r.addQuery('agent', current.assigned_to);
+    r.setLimit(1);
+    r.query();
+    if (r.next()) {
+        g_scratchpad.badge = r.badge + '';
+        g_scratchpad.points = parseInt(r.points, 10) || 0;
+    }
+})(current, g_scratchpad);
